@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -97,6 +98,29 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	   GPIO_PinState do_state = HAL_GPIO_ReadPin(MQ5_DO_PIN_GPIO_Port, MQ5_DO_PIN_Pin);
+
+	   uint16_t adc_value = 0;
+	   float adc_value_f = 0.0f;
+	   HAL_ADC_Start(&hadc1);
+	   if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK) {
+	   adc_value = HAL_ADC_GetValue(&hadc1);
+	   }
+	   HAL_ADC_Stop(&hadc1);
+	   adc_value_f = (3.3f)/(4095.0f) * adc_value;
+	   printf("ADC Value: %u, Voltage: %.2f V\r\n", adc_value, adc_value_f);
+	   HAL_Delay(1000);
+
+	   if (do_state == GPIO_PIN_SET) {
+	       // HIGH-Signal: RED on, GREEN off
+	       HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+	       HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);
+	   } else {
+	       // LOW-Signal: GREEN on, RED off
+	       HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_SET);
+	       HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
+	   }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
