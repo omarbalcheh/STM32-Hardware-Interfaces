@@ -101,27 +101,27 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(alarm_flag == 1){
-		  HAL_NVIC_DisableIRQ(EXTI4_IRQn);
-		  for (int i = 0; i < 10; i++) {
-		          HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5);
-		          HAL_Delay(300);
-		      }
-
-		  alarm_flag = 0;
-		  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
-	  }
-
 	  uint16_t adc_value = 0;
 	  float adc_value_f = 0.0f;
 	  HAL_ADC_Start(&hadc1);
 	  if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK) {
-	   adc_value = HAL_ADC_GetValue(&hadc1);
+	  adc_value = HAL_ADC_GetValue(&hadc1);
 	  	  }
 	  HAL_ADC_Stop(&hadc1);
 	  adc_value_f = (3.3f)/(4095.0f) * adc_value;
 	  printf("ADC Value: %u, Voltage: %.2f, ISR:%u\r\n", adc_value, adc_value_f, alarm_flag);
-	  HAL_Delay(1000);
+
+	  if(alarm_flag == 1){
+	  		  HAL_NVIC_DisableIRQ(EXTI4_IRQn);
+	  		  for (int i = 0; i < 10; i++) {
+	  		          HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5);
+	  		          HAL_Delay(300);
+	  		      }
+
+	  		  alarm_flag = 0;
+	  		  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+	  	}
+	  else{ HAL_Delay(1000);}
 
     /* USER CODE END WHILE */
 
