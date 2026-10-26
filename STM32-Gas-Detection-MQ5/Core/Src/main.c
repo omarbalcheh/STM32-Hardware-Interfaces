@@ -45,7 +45,6 @@ ADC_HandleTypeDef hadc1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-volatile uint8_t alarm_flag = 0;
 uint16_t adc_value = 0;
 uint16_t avg_value = 0;
 uint16_t adc_buffer[10] = {0};
@@ -131,17 +130,7 @@ int main(void)
 	      printf("ADC value: %u, Voltage: %.2f V, Mean: %.2f V, ISR: %u\r\n",
 	             adc_value, adc_value_f, mean_f, alarm_flag);
 
-	      if (alarm_flag == 1) {
-	          HAL_NVIC_DisableIRQ(EXTI4_IRQn);
-	          for (int i = 0; i < 10; i++) {
-	              HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5);
-	              HAL_Delay(300);
-	          }
-	          alarm_flag = 0;
-	          HAL_NVIC_EnableIRQ(EXTI4_IRQn);
-	      } else {
-	          HAL_Delay(1000);
-	      }
+
 	/* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -349,13 +338,6 @@ int _write(int file, char *ptr, int len) {
     HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, HAL_MAX_DELAY);
     return len;
 }
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-    if (GPIO_Pin == MQ5_DO_Pin) {
-        alarm_flag = 1;
-    }
-}
-
 /* USER CODE END 4 */
 
 /**
