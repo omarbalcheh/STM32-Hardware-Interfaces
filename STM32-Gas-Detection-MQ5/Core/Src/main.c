@@ -45,7 +45,8 @@ ADC_HandleTypeDef hadc1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-volatile uint8_t alarm_flag = 0;
+uint16_t adc_value = 0;
+uint16_t avg_value = 0;
 uint16_t adc_buffer[10] = {0};
 uint8_t buffer_index = 0;
 /* USER CODE END PV */
@@ -103,7 +104,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  uint16_t adc_value = 0;
+	  adc_value = 0;
 	      HAL_ADC_Start(&hadc1);
 	      if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK) {
 	          adc_value = HAL_ADC_GetValue(&hadc1);
@@ -121,24 +122,26 @@ int main(void)
 	      for (int i = 0; i < 10; i++) {
 	          sum += adc_buffer[i];
 	      }
-	      uint16_t avg_value = sum / 10;
+	      avg_value = sum / 10;
 
 	      float adc_value_f = (3.3f / 4095.0f) * adc_value;
 	      float mean_f = (3.3f / 4095.0f) * avg_value;
 
-	      printf("ADC value: %u, Voltage: %.2f V, Mean: %.2f V, ISR: %u\r\n",
-	             adc_value, adc_value_f, mean_f, alarm_flag);
-
-	      if (alarm_flag == 1) {
-	          HAL_NVIC_DisableIRQ(EXTI4_IRQn);
-	          for (int i = 0; i < 10; i++) {
-	              HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5);
-	              HAL_Delay(300);
-	          }
-	          alarm_flag = 0;
-	          HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+	      printf("ADC value: %u, Voltage: %.2f V, Mean: %.2f V\r\n",
+	             adc_value, adc_value_f, mean_f);
+	      HAL_Delay(1000);
+	      if (mean_f < 1.0f) {
+	      	  HAL_GPIO_WritePin(GPIOA, GREEN_LED_Pin, GPIO_PIN_SET);
+	      	  HAL_GPIO_WritePin(GPIOA, YELLOW_LED_Pin, GPIO_PIN_RESET);
+	      	  HAL_GPIO_WritePin(GPIOA, RED_LED_Pin, GPIO_PIN_RESET);
+	      } else if (mean_f >= 1.0f && mean_f < 2.0f) {
+	      	  HAL_GPIO_WritePin(GPIOA, GREEN_LED_Pin, GPIO_PIN_RESET);
+	      	  HAL_GPIO_WritePin(GPIOA, YELLOW_LED_Pin, GPIO_PIN_SET);
+	      	  HAL_GPIO_WritePin(GPIOA, RED_LED_Pin, GPIO_PIN_RESET);
 	      } else {
-	          HAL_Delay(1000);
+	      	  HAL_GPIO_WritePin(GPIOA, GREEN_LED_Pin, GPIO_PIN_RESET);
+	      	  HAL_GPIO_WritePin(GPIOA, YELLOW_LED_Pin, GPIO_PIN_RESET);
+	      	  HAL_GPIO_WritePin(GPIOA, RED_LED_Pin, GPIO_PIN_SET);
 	      }
 	/* USER CODE END WHILE */
 
@@ -347,13 +350,6 @@ int _write(int file, char *ptr, int len) {
     HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, HAL_MAX_DELAY);
     return len;
 }
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-    if (GPIO_Pin == MQ5_DO_Pin) {
-        alarm_flag = 1;
-    }
-}
-
 /* USER CODE END 4 */
 
 /**
