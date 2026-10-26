@@ -45,7 +45,7 @@ ADC_HandleTypeDef hadc1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+volatile uint8_t alarm_flag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -101,29 +101,28 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(alarm_flag == 1){
+		  HAL_NVIC_DisableIRQ(EXTI4_IRQn);
+		  for (int i = 0; i < 10; i++) {
+		          HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5);
+		          HAL_Delay(300);
+		      }
 
-	   GPIO_PinState do_state = HAL_GPIO_ReadPin(MQ5_DO_GPIO_Port, MQ5_DO_Pin);
+		  alarm_flag = 0;
+		  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+	  }
 
-	   uint16_t adc_value = 0;
-	   float adc_value_f = 0.0f;
-	   HAL_ADC_Start(&hadc1);
-	   if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK) {
+	  uint16_t adc_value = 0;
+	  float adc_value_f = 0.0f;
+	  HAL_ADC_Start(&hadc1);
+	  if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK) {
 	   adc_value = HAL_ADC_GetValue(&hadc1);
-	   }
-	   HAL_ADC_Stop(&hadc1);
-	   adc_value_f = (3.3f)/(4095.0f) * adc_value;
-	   printf("ADC Value: %u, Voltage: %.2f V\r\n", adc_value, adc_value_f);
-	   HAL_Delay(1000);
+	  	  }
+	  HAL_ADC_Stop(&hadc1);
+	  adc_value_f = (3.3f)/(4095.0f) * adc_value;
+	  printf("ADC Value: %u, Voltage: %.2f, ISR:%u\r\n", adc_value, adc_value_f, alarm_flag);
+	  HAL_Delay(1000);
 
-	   if (do_state == GPIO_PIN_SET) {
-	       // HIGH-Signal: RED on, GREEN off
-	       HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
-	       HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_RESET);
-	   } else {
-	       // LOW-Signal: GREEN on, RED off
-	       HAL_GPIO_WritePin(GREEN_LED_GPIO_Port, GREEN_LED_Pin, GPIO_PIN_SET);
-	       HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_RESET);
-	   }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -313,9 +312,13 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : MQ5_DO_Pin */
   GPIO_InitStruct.Pin = MQ5_DO_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(MQ5_DO_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -327,6 +330,13 @@ int _write(int file, char *ptr, int len) {
     HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, HAL_MAX_DELAY);
     return len;
 }
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+    if (GPIO_Pin == MQ5_DO_Pin) {
+        alarm_flag = 1;
+    }
+}
+
 /* USER CODE END 4 */
 
 /**
