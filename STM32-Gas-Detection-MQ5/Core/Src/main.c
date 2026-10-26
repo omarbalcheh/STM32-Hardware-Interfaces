@@ -127,10 +127,22 @@ int main(void)
 	      float adc_value_f = (3.3f / 4095.0f) * adc_value;
 	      float mean_f = (3.3f / 4095.0f) * avg_value;
 
-	      printf("ADC value: %u, Voltage: %.2f V, Mean: %.2f V, ISR: %u\r\n",
-	             adc_value, adc_value_f, mean_f, alarm_flag);
-
-
+	      printf("ADC value: %u, Voltage: %.2f V, Mean: %.2f V\r\n",
+	             adc_value, adc_value_f, mean_f);
+	      HAL_Delay(1000);
+	      if (mean_f < 1.0f) {
+	      	  HAL_GPIO_WritePin(GPIOA, GREEN_LED_Pin, GPIO_PIN_SET);
+	      	  HAL_GPIO_WritePin(GPIOA, YELLOW_LED_Pin, GPIO_PIN_RESET);
+	      	  HAL_GPIO_WritePin(GPIOA, RED_LED_Pin, GPIO_PIN_RESET);
+	      } else if (mean_f >= 1.0f && mean_f < 2.0f) {
+	      	  HAL_GPIO_WritePin(GPIOA, GREEN_LED_Pin, GPIO_PIN_RESET);
+	      	  HAL_GPIO_WritePin(GPIOA, YELLOW_LED_Pin, GPIO_PIN_SET);
+	      	  HAL_GPIO_WritePin(GPIOA, RED_LED_Pin, GPIO_PIN_RESET);
+	      } else {
+	      	  HAL_GPIO_WritePin(GPIOA, GREEN_LED_Pin, GPIO_PIN_RESET);
+	      	  HAL_GPIO_WritePin(GPIOA, YELLOW_LED_Pin, GPIO_PIN_RESET);
+	      	  HAL_GPIO_WritePin(GPIOA, RED_LED_Pin, GPIO_PIN_SET);
+	      }
 	/* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
