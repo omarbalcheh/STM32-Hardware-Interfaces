@@ -46,6 +46,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 volatile uint8_t alarm_flag = 0;
+uint16_t adc_buffer[10] = {0};
+uint8_t buffer_index = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,28 +104,43 @@ int main(void)
   while (1)
   {
 	  uint16_t adc_value = 0;
-	  float adc_value_f = 0.0f;
-	  HAL_ADC_Start(&hadc1);
-	  if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK) {
-	  adc_value = HAL_ADC_GetValue(&hadc1);
-	  	  }
-	  HAL_ADC_Stop(&hadc1);
-	  adc_value_f = (3.3f)/(4095.0f) * adc_value;
-	  printf("ADC Value: %u, Voltage: %.2f, ISR:%u\r\n", adc_value, adc_value_f, alarm_flag);
+	      HAL_ADC_Start(&hadc1);
+	      if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK) {
+	          adc_value = HAL_ADC_GetValue(&hadc1);
+	      }
+	      HAL_ADC_Stop(&hadc1);
 
-	  if(alarm_flag == 1){
-	  		  HAL_NVIC_DisableIRQ(EXTI4_IRQn);
-	  		  for (int i = 0; i < 10; i++) {
-	  		          HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5);
-	  		          HAL_Delay(300);
-	  		      }
+	      adc_buffer[buffer_index] = adc_value;
+	      buffer_index++;
 
-	  		  alarm_flag = 0;
-	  		  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
-	  	}
-	  else{ HAL_Delay(1000);}
+	      if (buffer_index >= 10) {
+	          buffer_index = 0;
+	      }
 
-    /* USER CODE END WHILE */
+	      uint32_t sum = 0;
+	      for (int i = 0; i < 10; i++) {
+	          sum += adc_buffer[i];
+	      }
+	      uint16_t avg_value = sum / 10;
+
+	      float adc_value_f = (3.3f / 4095.0f) * adc_value;
+	      float mean_f = (3.3f / 4095.0f) * avg_value;
+
+	      printf("ADC value: %u, Voltage: %.2f V, Mean: %.2f V, ISR: %u\r\n",
+	             adc_value, adc_value_f, mean_f, alarm_flag);
+
+	      if (alarm_flag == 1) {
+	          HAL_NVIC_DisableIRQ(EXTI4_IRQn);
+	          for (int i = 0; i < 10; i++) {
+	              HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5);
+	              HAL_Delay(300);
+	          }
+	          alarm_flag = 0;
+	          HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+	      } else {
+	          HAL_Delay(1000);
+	      }
+	/* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
